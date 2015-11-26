@@ -66,8 +66,9 @@ namespace Assets.Scripts
         private NavMeshPathGraph navMesh;
         private AStarPathfinding aStarPathFinding;
         private PathFindingDecomposer decomposer;
-        
 
+
+        private uint influenceMapDebugMode;
         private bool draw;
 
         private float nextUpdateTime = 0.0f;
@@ -76,6 +77,7 @@ namespace Assets.Scripts
         public void Start()
         {
             this.draw = true;
+            this.influenceMapDebugMode = 0;
             this.navMesh = NavigationManager.Instance.NavMeshGraphs[0];
             this.Character = new DynamicCharacter(this.gameObject);
 
@@ -267,31 +269,31 @@ namespace Assets.Scripts
         {
             if (this.draw)
             {
-                foreach (var locationRecord in this.RedInfluenceMap.Closed.All())
+                var size = new Vector3(2, 1, 2);
+
+                if (this.influenceMapDebugMode == 0)
                 {
-                    Color color;
-                    var flag = locationRecord.StrongestInfluenceUnit as Flag;
-                    
-                    color = Color.red;
-                    color.r = (255 / 10.0f) * locationRecord.Influence;
-                    
-                    color.a = 1/5.0f*locationRecord.Influence;
-                    Gizmos.color = color;
-                    Gizmos.DrawSphere(locationRecord.Location.LocalPosition,1.0f);
+                    var red = Color.red;
+                    Gizmos.color = red;
+                    foreach (var locationRecord in this.RedInfluenceMap.Closed.All())
+                    {
+                        red.a = (1 / 5.0f) * locationRecord.Influence;
+                        Gizmos.color = red;
+                        Gizmos.DrawCube(locationRecord.Location.LocalPosition, size);
+                    }
                 }
-
-                foreach (var locationRecord in this.GreenInfluenceMap.Closed.All())
+                else if (this.influenceMapDebugMode == 1)
                 {
-                    Color color;
-                    var flag = locationRecord.StrongestInfluenceUnit as Flag;
-
-                    color = Color.green;
-                    color.g = (255 / 10.0f) * locationRecord.Influence;
-
-                    color.a = 1 / 5.0f * locationRecord.Influence;
-                    Gizmos.color = color;
-                    Gizmos.DrawSphere(locationRecord.Location.LocalPosition, 1.0f);
+                    var green = Color.green;
+                    Gizmos.color = green;
+                    foreach (var locationRecord in this.GreenInfluenceMap.Closed.All())
+                    {
+                        green.a = 1 / 5.0f * locationRecord.Influence;
+                        Gizmos.color = green;
+                        Gizmos.DrawCube(locationRecord.Location.LocalPosition, size);
+                    }
                 }
+                
 
                 //draw the current Solution Path if any (for debug purposes)
                 if (this.decomposer.UnsmoothedPath != null && this.decomposer.CurrentPath != null)

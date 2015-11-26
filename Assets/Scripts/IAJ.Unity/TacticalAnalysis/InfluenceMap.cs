@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Assets.Scripts.IAJ.Unity.TacticalAnalysis.DataStructures;
 using RAIN.Navigation.NavMesh;
+using RAIN.Navigation.Graph;
 
 namespace Assets.Scripts.IAJ.Unity.TacticalAnalysis
 {
@@ -23,7 +24,7 @@ namespace Assets.Scripts.IAJ.Unity.TacticalAnalysis
             this.Closed = closed;
             this.InfluenceFunction = influenceFunction;
             this.InfluenceThreshold = influenceThreshold;
-            this.NodesPerFlood = 100;
+            this.NodesPerFlood = 50;
         }
 
         public void Initialize(List<IInfluenceUnit> units)
@@ -57,15 +58,61 @@ namespace Assets.Scripts.IAJ.Unity.TacticalAnalysis
         {
             var processedNodes = 0;
 
-            //TODO implement
-            throw new NotImplementedException();
+            while (this.Open.CountOpen() > 0  || processedNodes < this.NodesPerFlood)
+            {
+                LocationRecord currentRecord = this.Open.GetBestAndRemove();
+                this.Closed.AddToClosed(currentRecord);
+                processedNodes++;
 
+                var outConnections = currentRecord.Location.OutEdgeCount;
+                for (int i = 0; i < outConnections; i++)
+                {
+                    this.ProcessChildNode(currentRecord, currentRecord.Location.EdgeOut(i));
+                }
+
+            }
             
             this.InProgress = false;
             this.CleanUp();
             return true;
         }
 
+        protected void ProcessChildNode(LocationRecord bestRecord, NavigationGraphEdge connectionEdge)
+        {
+
+            float influence = this.InfluenceFunction.DetermineInfluence(bestRecord.StrongestInfluenceUnit, bestRecord.Location.Position);
+            if (influence < this.InfluenceThreshold) return;
+
+            LocationRecord neighborRecord = this.Closed.SearchInClosed(bestRecord);
+
+            if(neighborRecord != null)
+            {
+                if (neighborRecord.Influence >= influence) return;
+                else this.Closed.RemoveFromClosed(neighborRecord);
+            } else
+            {
+                neighborRecord = this.Open.SearchInOpen(bestRecord);
+                if(neighborRecord != null)
+                {
+                    if(neighborRecord.Influence < influence)
+                    {
+                        neighborRecord.StrongestInfluenceUnit = bestRecord.StrongestInfluenceUnit;
+                        neighborRecord.Influence = influence;
+                    }
+                    return;
+                } else
+                {
+                    neighborRecord = new LocationRecord()
+                    {
+                        Location = bestRecord.Location
+                    };
+                }
+            }
+
+            neighborRecord.StrongestInfluenceUnit = bestRecord.StrongestInfluenceUnit;
+            neighborRecord.Influence = influence;
+            this.Open.AddToOpen(neighborRecord);
+        }
 
         public void CleanUp()
         {
