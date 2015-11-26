@@ -16,6 +16,7 @@ using RAIN.Navigation;
 using RAIN.Navigation.NavMesh;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Linq;
 
 namespace Assets.Scripts
 {
@@ -229,32 +230,34 @@ namespace Assets.Scripts
 
             if (this.GOAPDecisionMaking.InProgress)
             {
-                //choose an action using the GOB Decision Making process
+                //choose an action using the GOAP Decision Making process
                 var action = this.GOAPDecisionMaking.ChooseAction();
                 if (action != null)
                 {
                     action.Execute();
                     this.CurrentAction = action;
                     this.ActionText.text = this.CurrentAction.Name;
+
+                    this.TotalProcessingTimeText.text = "Processing Time: " + this.GOAPDecisionMaking.TotalProcessingTime;
+                    this.BestDiscontentmentText.text = "Best Discontentment: " + this.GOAPDecisionMaking.BestDiscontentmentValue;
+                    this.ProcessedActionsText.text = "Action comb. processed: " + this.GOAPDecisionMaking.TotalActionCombinationsProcessed;
+                    if (this.GOAPDecisionMaking.BestAction != null)
+                    {
+                        var actionText = "";
+                        foreach (var actionP in this.GOAPDecisionMaking.BestActionSequence)
+                        {
+                            actionText += "\n" + actionP.Name;
+                        }
+                        this.BestActionText.text = "Best Action Sequence: " + actionText;
+                    }
+                    else
+                    {
+                        this.BestActionText.text = "Best Action Sequence:\nNone";
+                    }
                 }
             }
 
-            this.TotalProcessingTimeText.text = "Processing Time: " + this.GOAPDecisionMaking.TotalProcessingTime;
-            this.BestDiscontentmentText.text = "Best Discontentment: " + this.GOAPDecisionMaking.BestDiscontentmentValue;
-            this.ProcessedActionsText.text = "Action comb. processed: " + this.GOAPDecisionMaking.TotalActionCombinationsProcessed;
-            if (this.GOAPDecisionMaking.BestAction != null)
-            {
-                var actionText = "";
-                foreach (var action in this.GOAPDecisionMaking.BestActionSequence)
-                {
-                    actionText += "\n" + action.Name;
-                }
-                this.BestActionText.text = "Best Action Sequence: " + actionText;
-            }
-            else
-            {
-                this.BestActionText.text = "Best Action Sequence:\nNone";
-            }
+            
             
             
             this.Character.Update();
@@ -289,19 +292,19 @@ namespace Assets.Scripts
                     Gizmos.color = color;
                     Gizmos.DrawSphere(locationRecord.Location.LocalPosition, 1.0f);
                 }
-                
+
                 //draw the current Solution Path if any (for debug purposes)
-                if (this.decomposer.UnsmoothedPath != null)
+                if (this.decomposer.UnsmoothedPath != null && this.decomposer.CurrentPath != null)
                 {
-                    var previousPosition = this.Character.KinematicData.position;
-                    foreach (var pathPosition in this.decomposer.UnsmoothedPath.PathPositions)
+                    var previousPosition = this.decomposer.UnsmoothedPath.PathPositions[0];
+                    foreach (var pathPosition in this.decomposer.UnsmoothedPath.PathPositions.Skip(1))
                     {
                         Debug.DrawLine(previousPosition, pathPosition, Color.red);
                         previousPosition = pathPosition;
                     }
 
-                    previousPosition = this.Character.KinematicData.position;
-                    foreach (var pathPosition in this.decomposer.CurrentPath.PathPositions)
+                    previousPosition = this.decomposer.CurrentPath.PathPositions[0];
+                    foreach (var pathPosition in this.decomposer.CurrentPath.PathPositions.Skip(1))
                     {
                         Debug.DrawLine(previousPosition, pathPosition, Color.green);
                         previousPosition = pathPosition;
