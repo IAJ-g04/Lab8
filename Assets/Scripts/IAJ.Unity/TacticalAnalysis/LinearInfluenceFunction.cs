@@ -7,8 +7,7 @@ namespace Assets.Scripts.IAJ.Unity.TacticalAnalysis
     {
         public float DetermineInfluence(IInfluenceUnit unit, Vector3 location)
         {
-            //TODO: implement
-            throw new NotImplementedException();
+            return unit.DirectInfluence / (1 + (location - unit.Location.Position).magnitude);
         }
     }
 }
